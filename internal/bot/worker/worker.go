@@ -1,4 +1,4 @@
-package bot
+package worker
 
 import (
 	"log"
@@ -7,6 +7,11 @@ import (
 	"strconv"
 
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+const (
+	// command list
+	startCommand = "/start"
 )
 
 type Worker struct {

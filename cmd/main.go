@@ -1,12 +1,12 @@
 package main
 
 import (
-	"app/internal/bot"
+	"app/internal/bot/worker"
 	"log"
 )
 
 func main() {
-	worker, err := bot.NewWorker()
+	worker, err := worker.NewWorker()
 	if err != nil {
 		log.Fatal(err)
 	}
