@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"app/internal/bot/repository/mongo_db"
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"os"
@@ -14,10 +16,15 @@ const (
 	startCommand = "/start"
 )
 
+var (
+	mongoURI string
+)
+
 type Worker struct {
 	bot             *api.BotAPI
 	botWH, apiToken string
 	debug           bool
+	dbClient        *mongo.Client
 }
 
 func NewWorker() (Worker, error) {
@@ -41,17 +48,32 @@ func NewWorker() (Worker, error) {
 		return w, err
 	}
 
+	w.dbClient, err = mongo_db.NewClient(mongoURI)
+	if err != nil {
+		return w, err
+	}
+
 	return w, nil
 }
 
 func (w *Worker) initEnv() error {
 	var err error
 
-	w.apiToken = os.Getenv("API_TOKEN")
-	w.botWH = os.Getenv("APP_WEBHOOK")
-	w.debug, err = strconv.ParseBool(os.Getenv("DEBUG"))
+	w.apiToken = checkEmpty(os.Getenv("API_TOKEN"))
+	w.botWH = checkEmpty(os.Getenv("APP_WEBHOOK"))
+	w.debug, err = strconv.ParseBool(checkEmpty(os.Getenv("DEBUG")))
+
+	mongoURI = checkEmpty(os.Getenv("MONGODB_URI"))
 
 	return err
+}
+
+func checkEmpty(env string) string {
+	if env == "" {
+		log.Fatalf("Required environment variable: %s", env)
+	}
+
+	return env
 }
 
 func (w *Worker) isValidMsg(update *api.Update) bool {

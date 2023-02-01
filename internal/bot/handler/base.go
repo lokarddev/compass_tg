@@ -2,6 +2,7 @@ package handler
 
 import (
 	"app/internal/bot/message"
+	"fmt"
 	"log"
 
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -22,6 +23,9 @@ type StartHandler struct {
 
 func (h *StartHandler) Call(update *api.Update) {
 	msg := api.NewMessage(update.Message.Chat.ID, message.StartReplyText)
+
+	user := update.SentFrom()
+	fmt.Println(user)
 
 	if _, err := h.bot.Send(msg); err != nil {
 		log.Println(err)
