@@ -1,43 +1,43 @@
 package worker
 
 import (
-	"app/internal/bot/handlers"
+	"app/internal/bot/handler"
 
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Dispatcher struct {
-	commandHandler, textHandler map[string]handlers.HandlerInterface
+	commandHandler, textHandler map[string]handler.HandlerInterface
 }
 
-func (d *Dispatcher) AttachCommand(topic string, handler handlers.HandlerInterface) {
+func (d *Dispatcher) AttachCommand(topic string, handler handler.HandlerInterface) {
 	d.commandHandler[topic] = handler
 }
 
-func (d *Dispatcher) AttachText(text string, handler handlers.HandlerInterface) {
+func (d *Dispatcher) AttachText(text string, handler handler.HandlerInterface) {
 	d.textHandler[text] = handler
 }
 
 func (d *Dispatcher) CallHandler(update *api.Update) {
 	switch update.Message.IsCommand() {
 	case true:
-		handler, ok := d.commandHandler[update.Message.Text]
+		h, ok := d.commandHandler[update.Message.Text]
 		if ok {
-			handler.Call(update)
+			h.Call(update)
 		}
 
 	case false:
-		handler, ok := d.textHandler[update.Message.Text]
+		h, ok := d.textHandler[update.Message.Text]
 		if ok {
-			handler.Call(update)
+			h.Call(update)
 		}
 	}
 }
 
 func NewDispatcher(bot *api.BotAPI) *Dispatcher {
-	d := &Dispatcher{commandHandler: make(map[string]handlers.HandlerInterface)}
+	d := &Dispatcher{commandHandler: make(map[string]handler.HandlerInterface)}
 
-	d.AttachCommand(startCommand, handlers.NewStartHandler(bot))
+	d.AttachCommand(startCommand, handler.NewStartHandler(bot))
 
 	return d
 }

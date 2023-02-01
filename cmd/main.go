@@ -6,12 +6,12 @@ import (
 )
 
 func main() {
-	worker, err := worker.NewWorker()
+	w, err := worker.NewWorker()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = worker.Start(); err != nil {
+	if err = w.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
