@@ -2,6 +2,10 @@ package model
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
+const (
+	EdgarSubscription = "edgar"
+)
+
 type User struct {
 	ID            primitive.ObjectID `json:"_id" bson:"_id"`
 	TgID          int64              `json:"tg_id" bson:"tg_id"`
@@ -26,6 +30,7 @@ type Subscriptions struct {
 }
 
 type Subscription struct {
-	Enabled bool     `json:"enabled" bson:"enabled"`
-	Tickers []string `json:"tickers" bson:"tickers"`
+	Enabled     bool     `json:"enabled" bson:"enabled"`
+	PendingSubs []string `json:"pending_subs" bson:"pending_subs"`
+	Tickers     []string `json:"tickers" bson:"tickers"`
 }

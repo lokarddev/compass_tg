@@ -9,8 +9,5 @@ const (
 	InsiderTradingCommand = "/price_alert"
 )
 
-// Buttons
-const ()
-
 // Text
 const ()

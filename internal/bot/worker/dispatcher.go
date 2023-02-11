@@ -4,7 +4,7 @@ import (
 	"app/internal/bot/common"
 	"app/internal/bot/handler"
 	"app/internal/bot/handler/edgar"
-	"app/internal/bot/repository"
+	"app/internal/bot/repository/mongo_db"
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -12,6 +12,7 @@ import (
 
 type DispatcherInterface interface {
 	AttachCommand(topic string, handler HandlersInterface)
+	AttachText(handler HandlersInterface)
 	CallHandler(update *api.Update)
 }
 
@@ -20,16 +21,24 @@ type HandlersInterface interface {
 }
 
 type Dispatcher struct {
-	commandHandler, textHandler map[string]HandlersInterface
+	commandHandler map[string]HandlersInterface
+	textHandler    []HandlersInterface
 }
 
 func NewDispatcher(bot *api.BotAPI, dbClient *mongo.Client) DispatcherInterface {
 	d := &Dispatcher{commandHandler: make(map[string]HandlersInterface)}
 
-	baseRepo := repository.NewRepository(dbClient)
+	baseRepo := mongo_db.NewRepository(dbClient)
 
+	// common commands
 	d.AttachCommand(common.StartCommand, handler.NewStartHandler(bot, baseRepo))
-	d.AttachCommand(common.EdgarCommand, edgar.NewEdgarHandler(bot, baseRepo))
+
+	// edgar text/command handlers
+	d.AttachCommand(common.EdgarCommand, edgar.NewSubCheckHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDeleteHandler(bot, baseRepo))
+	d.AttachText(edgar.NewSubHandler(bot, baseRepo))
+	d.AttachText(edgar.NewSubApproveHandler(bot, baseRepo))
+	d.AttachText(edgar.NewSubFinalHandler(bot, baseRepo))
 
 	return d
 }
@@ -38,8 +47,8 @@ func (d *Dispatcher) AttachCommand(topic string, handler HandlersInterface) {
 	d.commandHandler[topic] = handler
 }
 
-func (d *Dispatcher) AttachText(text string, handler HandlersInterface) {
-	d.textHandler[text] = handler
+func (d *Dispatcher) AttachText(handler HandlersInterface) {
+	d.textHandler = append(d.textHandler, handler)
 }
 
 func (d *Dispatcher) CallHandler(update *api.Update) {
@@ -57,8 +66,7 @@ func (d *Dispatcher) CallHandler(update *api.Update) {
 		}
 
 	case false:
-		h, ok := d.textHandler[update.Message.Text]
-		if ok {
+		for _, h := range d.textHandler {
 			h.Call(update)
 		}
 	}
