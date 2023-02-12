@@ -23,6 +23,7 @@ type BaseRepoInterface interface {
 	GetUser(sentFrom *tgbotapi.User) (model.User, error)
 	AddPendingSubs(user *model.User, subType string, subs ...string) error
 	UpsertSubscriptions(user *model.User, subType string, subs ...string) error
+	DelSubscriptions(user *model.User, subType string, subs ...string) error
 }
 
 type BaseRepository struct {
@@ -147,10 +148,51 @@ func newEdgarSubs(user *model.User, subs []string) {
 	user.Subscriptions.Edgar.PendingSubs = []string{}
 }
 
-func newPriceSubs() {
+func (r *BaseRepository) DelSubscriptions(user *model.User, subType string, subs ...string) error {
+	switch subType {
+	case model.EdgarSubscription:
+		edgarSetSubs(user, subs)
+	}
 
+	filter := bson.D{{"_id", user.ID}}
+	update := bson.D{{"$set", bson.D{
+		{fmt.Sprintf("subscriptions.%s.tickers", subType), user.Subscriptions.Edgar.Tickers},
+		{fmt.Sprintf("subscriptions.%s.enabled", subType), user.Subscriptions.Edgar.Enabled},
+		{fmt.Sprintf("subscriptions.%s.pending_subs", subType), user.Subscriptions.Edgar.PendingSubs}}}}
+
+	opts := options.Update().SetUpsert(true)
+
+	coll := r.client.Database(dbName).Collection(userCollection)
+
+	_, err := coll.UpdateOne(context.TODO(), filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func newInsiderSubs() {
+func edgarSetSubs(user *model.User, subs []string) {
+	toSet := make([]string, 0, len(user.Subscriptions.Edgar.Tickers))
 
+	for _, ticker := range subs {
+		if !utils.StrInSlice(user.Subscriptions.Edgar.Tickers, ticker) {
+			toSet = append(toSet, ticker)
+		}
+	}
+
+	switch {
+	case len(toSet) > 0:
+		user.Subscriptions.Edgar.Tickers = utils.RemoveDuplicatesAndSortStr(append(user.Subscriptions.Edgar.Tickers, toSet...))
+	default:
+		user.Subscriptions.Edgar.Tickers = []string{}
+	}
+
+	if len(toSet) > 0 {
+		user.Subscriptions.Edgar.Enabled = true
+	} else {
+		user.Subscriptions.Edgar.Enabled = false
+	}
+
+	user.Subscriptions.Edgar.PendingSubs = []string{}
 }

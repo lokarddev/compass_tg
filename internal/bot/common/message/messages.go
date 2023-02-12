@@ -15,4 +15,8 @@ const (
 	MsgSubscribeToThis          = "Subscribe to these companies?\n\n"
 	MsgSubSuccess               = "Congratulations! You have successfully subscribed to updates.\nWhen SEC EDGAR has an update, it will appear in the bot."
 	MsgNoSub                    = "No new subs added. Returned to 'start' menu."
+	MsgDelAll                   = "Delete all ticker(s)?"
+	MsgDelSingle                = "Delete selected ticker(s)?\n\n"
+	MsgTickersDeleted           = "Ticker(s) has been deleted"
+	MsgNoTickersDeleted         = "No tickers deleted. Returned to 'start' menu."
 )

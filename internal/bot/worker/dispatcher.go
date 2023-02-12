@@ -35,10 +35,15 @@ func NewDispatcher(bot *api.BotAPI, dbClient *mongo.Client) DispatcherInterface 
 
 	// edgar text/command handlers
 	d.AttachCommand(common.EdgarCommand, edgar.NewSubCheckHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDeleteHandler(bot, baseRepo))
 	d.AttachText(edgar.NewSubHandler(bot, baseRepo))
 	d.AttachText(edgar.NewSubApproveHandler(bot, baseRepo))
 	d.AttachText(edgar.NewSubFinalHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDeleteHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDeleteChoiceHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDelSingleApproveHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDelAllApproveHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDelSingleFinalHandler(bot, baseRepo))
+	d.AttachText(edgar.NewDelAllFinalHandler(bot, baseRepo))
 
 	return d
 }

@@ -2,6 +2,7 @@ package edgar
 
 import (
 	"app/internal/bot/common"
+	"app/internal/bot/common/keyboards"
 	"app/internal/bot/common/message"
 	"app/internal/bot/handler"
 	"app/internal/bot/model"
@@ -37,7 +38,7 @@ func (h *SubHandler) Call(update *api.Update) {
 		return
 	}
 
-	if !h.ValidState(user.State.NavCurrent, edgarSubSrc) {
+	if !h.ValidState(user.State.NavCurrent, edgarSubSrc) || update.Message.Text == keyboards.DeleteButton {
 		return
 	}
 
