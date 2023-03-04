@@ -18,8 +18,8 @@ type User struct {
 }
 
 type State struct {
-	NavPrevious string `json:"previous" bson:"previous"`
-	NavCurrent  string `json:"current" bson:"current"`
+	Branch     int `json:"branch" bson:"branch"`
+	NavCurrent int `json:"current" bson:"current"`
 }
 
 type Subscriptions struct {

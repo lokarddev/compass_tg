@@ -1,13 +1,13 @@
 package worker
 
 import (
-	"app/internal/bot/common"
 	"app/internal/bot/handler"
 	"app/internal/bot/handler/edgar"
-	"app/internal/bot/repository/mongo_db"
-	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"go.mongodb.org/mongo-driver/mongo"
+	"app/internal/bot/helper"
+	"app/internal/repository"
 	"log"
+
+	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type DispatcherInterface interface {
@@ -25,25 +25,23 @@ type Dispatcher struct {
 	textHandler    []HandlersInterface
 }
 
-func NewDispatcher(bot *api.BotAPI, dbClient *mongo.Client) DispatcherInterface {
+func NewDispatcher(bot *api.BotAPI, repo repository.BaseRepoInterface) DispatcherInterface {
 	d := &Dispatcher{commandHandler: make(map[string]HandlersInterface)}
 
-	baseRepo := mongo_db.NewRepository(dbClient)
-
-	// common commands
-	d.AttachCommand(common.StartCommand, handler.NewStartHandler(bot, baseRepo))
+	// helper commands
+	d.AttachCommand(helper.StartCommand, handler.NewStartHandler(bot, repo))
 
 	// edgar text/command handlers
-	d.AttachCommand(common.EdgarCommand, edgar.NewSubCheckHandler(bot, baseRepo))
-	d.AttachText(edgar.NewSubHandler(bot, baseRepo))
-	d.AttachText(edgar.NewSubApproveHandler(bot, baseRepo))
-	d.AttachText(edgar.NewSubFinalHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDeleteHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDeleteChoiceHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDelSingleApproveHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDelAllApproveHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDelSingleFinalHandler(bot, baseRepo))
-	d.AttachText(edgar.NewDelAllFinalHandler(bot, baseRepo))
+	d.AttachCommand(helper.EdgarCommand, edgar.NewSubCheckHandler(bot, repo))
+	d.AttachText(edgar.NewSubHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewSubApproveHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewSubFinalHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDeleteHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDeleteChoiceHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDelSingleApproveHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDelAllApproveHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDelSingleFinalHandler(bot, repo, helper.EdgarBranch))
+	d.AttachText(edgar.NewDelAllFinalHandler(bot, repo, helper.EdgarBranch))
 
 	return d
 }
@@ -78,7 +76,7 @@ func (d *Dispatcher) CallHandler(update *api.Update) {
 }
 
 func (d *Dispatcher) isValidMsg(msg *api.Message) bool {
-	if msg.IsCommand() && msg.Text == common.StartCommand {
+	if msg.IsCommand() && msg.Text == helper.StartCommand {
 		return true
 	}
 

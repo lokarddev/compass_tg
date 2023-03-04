@@ -1,10 +1,11 @@
 package mongo_db
 
 import (
-	"app/internal/bot/model"
-	"app/internal/bot/utils"
+	"app/internal/model"
+	"app/internal/utils"
 	"context"
 	"fmt"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,21 +18,13 @@ const (
 	userCollection = "users"
 )
 
-type BaseRepoInterface interface {
-	UpsertUser(sentFrom *tgbotapi.User) (model.User, error)
-	UpsertState(user *model.User, current string) error
-	GetUser(sentFrom *tgbotapi.User) (model.User, error)
-	AddPendingSubs(user *model.User, subType string, subs ...string) error
-	UpsertSubscriptions(user *model.User, subType string, subs ...string) error
-	DelSubscriptions(user *model.User, subType string, subs ...string) error
-}
-
 type BaseRepository struct {
+	ctx    context.Context
 	client *mongo.Client
 }
 
-func NewRepository(dbClient *mongo.Client) *BaseRepository {
-	return &BaseRepository{client: dbClient}
+func NewRepository(ctx context.Context, dbClient *mongo.Client) *BaseRepository {
+	return &BaseRepository{ctx: ctx, client: dbClient}
 }
 
 func (r *BaseRepository) GetUser(sentFrom *tgbotapi.User) (model.User, error) {
@@ -75,10 +68,11 @@ func (r *BaseRepository) UpsertUser(sentFrom *tgbotapi.User) (model.User, error)
 	return user, nil
 }
 
-func (r *BaseRepository) UpsertState(user *model.User, current string) error {
+func (r *BaseRepository) UpsertState(user *model.User, current, branch int) error {
 	filter := bson.D{{"_id", user.ID}}
 	update := bson.D{{"$set", bson.D{
-		{"state.current", current}}}}
+		{"state.current", current},
+		{"state.branch", branch}}}}
 
 	opts := options.Update().SetUpsert(true)
 

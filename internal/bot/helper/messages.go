@@ -1,4 +1,4 @@
-package message
+package helper
 
 // Common messages
 const (

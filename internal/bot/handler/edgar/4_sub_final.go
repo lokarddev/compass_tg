@@ -1,34 +1,35 @@
 package edgar
 
 import (
-	"app/internal/bot/common"
-	"app/internal/bot/common/keyboards"
-	"app/internal/bot/common/message"
 	"app/internal/bot/handler"
-	"app/internal/bot/model"
-	"app/internal/bot/repository/mongo_db"
+	"app/internal/bot/helper"
+	"app/internal/model"
+	"app/internal/repository"
 	"fmt"
-	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
-)
 
-const (
-	_ = "EdgarSubscribeFinal"
+	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var (
-	edgarSubFinalSrc     = []string{edgarSubscribeApproveState}
-	edgarSubFinalButtons = []string{keyboards.Yes, keyboards.No}
+	edgarSubFinalButtons = []string{helper.Yes, helper.No}
 )
 
 type SubFinalHandler struct {
 	bot  *api.BotAPI
-	repo mongo_db.BaseRepoInterface
+	repo repository.BaseRepoInterface
 	handler.BaseHandler
+	nav handler.Nav
 }
 
-func NewSubFinalHandler(bot *api.BotAPI, dbRepo mongo_db.BaseRepoInterface) *SubFinalHandler {
-	return &SubFinalHandler{bot: bot, repo: dbRepo}
+func NewSubFinalHandler(bot *api.BotAPI, dbRepo repository.BaseRepoInterface, branch int) *SubFinalHandler {
+	return &SubFinalHandler{
+		bot:  bot,
+		repo: dbRepo,
+		nav: handler.Nav{
+			ValidSources: []int{helper.EdgarSubscribeApproveState},
+			ValidBranch:  branch,
+		}}
 }
 
 func (h *SubFinalHandler) Call(update *api.Update) {
@@ -39,16 +40,16 @@ func (h *SubFinalHandler) Call(update *api.Update) {
 		return
 	}
 
-	if !h.ValidState(user.State.NavCurrent, edgarSubFinalSrc) || !h.ValidText(update.Message.Text, edgarSubFinalButtons) {
+	if !h.ValidState(user, h.nav) || !h.ValidText(update.Message.Text, edgarSubFinalButtons) {
 		return
 	}
 
-	msg := api.NewMessage(update.Message.Chat.ID, message.MsgSubSuccess)
+	msg := api.NewMessage(update.Message.Chat.ID, helper.MsgSubSuccess)
 	msg.ReplyMarkup = api.NewRemoveKeyboard(false)
 
 	switch update.Message.Text {
-	case keyboards.No:
-		msg.Text = message.MsgNoSub
+	case helper.No:
+		msg.Text = helper.MsgNoSub
 
 		if _, err = h.bot.Send(msg); err != nil {
 			log.Println(err)
@@ -56,7 +57,7 @@ func (h *SubFinalHandler) Call(update *api.Update) {
 			return
 		}
 
-	case keyboards.Yes:
+	case helper.Yes:
 		toSub := user.Subscriptions.Edgar.PendingSubs
 
 		if err = h.repo.UpsertSubscriptions(&user, model.EdgarSubscription); err != nil {
@@ -81,7 +82,7 @@ func (h *SubFinalHandler) Call(update *api.Update) {
 		}
 	}
 
-	if err = h.repo.UpsertState(&user, common.StartCommand); err != nil {
+	if err = h.repo.UpsertState(&user, helper.StartCommandState, helper.StartBranch); err != nil {
 		log.Printf("Error setting state for user %s", user.Username)
 
 		return

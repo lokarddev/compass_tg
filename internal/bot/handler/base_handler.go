@@ -1,8 +1,17 @@
 package handler
 
-import "app/internal/bot/utils"
+import (
+	"app/internal/model"
+	"app/internal/utils"
+)
 
-type BaseHandler struct{}
+type Nav struct {
+	ValidSources []int
+	ValidBranch  int
+}
+
+type BaseHandler struct {
+}
 
 var (
 	MockEdgarSubs = map[string]string{
@@ -12,8 +21,8 @@ var (
 	}
 )
 
-func (h *BaseHandler) ValidState(currentNav string, validSources []string) bool {
-	return utils.StrInSlice(validSources, currentNav)
+func (h *BaseHandler) ValidState(user model.User, validNav Nav) bool {
+	return utils.IntInSlice(validNav.ValidSources, user.State.NavCurrent) && validNav.ValidBranch == user.State.Branch
 }
 
 func (h *BaseHandler) ValidText(input string, validSources []string) bool {

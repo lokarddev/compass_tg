@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"app/internal/bot/common"
-	"app/internal/bot/common/message"
-	"app/internal/bot/repository/mongo_db"
+	"app/internal/bot/helper"
+	"app/internal/repository"
 	"log"
 
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -11,10 +10,10 @@ import (
 
 type StartHandler struct {
 	bot  *api.BotAPI
-	repo mongo_db.BaseRepoInterface
+	repo repository.BaseRepoInterface
 }
 
-func NewStartHandler(bot *api.BotAPI, dbRepo mongo_db.BaseRepoInterface) *StartHandler {
+func NewStartHandler(bot *api.BotAPI, dbRepo repository.BaseRepoInterface) *StartHandler {
 	return &StartHandler{bot: bot, repo: dbRepo}
 }
 
@@ -27,7 +26,7 @@ func (h *StartHandler) Call(update *api.Update) {
 	}
 
 	msg := api.NewMessage(update.Message.Chat.ID, "")
-	msg.Text = message.MsgStart
+	msg.Text = helper.MsgStart
 	msg.ReplyMarkup = api.NewRemoveKeyboard(false)
 
 	if _, err = h.bot.Send(msg); err != nil {
@@ -36,7 +35,7 @@ func (h *StartHandler) Call(update *api.Update) {
 		return
 	}
 
-	if err = h.repo.UpsertState(&user, common.StartCommand); err != nil {
+	if err = h.repo.UpsertState(&user, helper.StartCommandState, helper.StartBranch); err != nil {
 		log.Printf("Error setting state for user %s", user.Username)
 
 		return

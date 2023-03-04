@@ -1,28 +1,30 @@
 package edgar
 
 import (
-	"app/internal/bot/common"
-	"app/internal/bot/common/keyboards"
-	"app/internal/bot/common/message"
 	"app/internal/bot/handler"
-	"app/internal/bot/model"
-	"app/internal/bot/repository/mongo_db"
-	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"app/internal/bot/helper"
+	"app/internal/model"
+	"app/internal/repository"
 	"log"
-)
 
-var (
-	edgarDelAllFinalSrc = []string{edgarDelAllApproveState}
+	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type DelAllFinalHandler struct {
 	bot  *api.BotAPI
-	repo mongo_db.BaseRepoInterface
+	repo repository.BaseRepoInterface
 	handler.BaseHandler
+	nav handler.Nav
 }
 
-func NewDelAllFinalHandler(bot *api.BotAPI, dbRepo mongo_db.BaseRepoInterface) *DelAllFinalHandler {
-	return &DelAllFinalHandler{bot: bot, repo: dbRepo}
+func NewDelAllFinalHandler(bot *api.BotAPI, dbRepo repository.BaseRepoInterface, branch int) *DelAllFinalHandler {
+	return &DelAllFinalHandler{
+		bot:  bot,
+		repo: dbRepo,
+		nav: handler.Nav{
+			ValidSources: []int{helper.EdgarDeleteAllState},
+			ValidBranch:  branch,
+		}}
 }
 
 func (h *DelAllFinalHandler) Call(update *api.Update) {
@@ -33,7 +35,7 @@ func (h *DelAllFinalHandler) Call(update *api.Update) {
 		return
 	}
 
-	if !h.ValidState(user.State.NavCurrent, edgarDelAllFinalSrc) || !h.ValidText(update.Message.Text, edgarSubFinalButtons) {
+	if !h.ValidState(user, h.nav) || !h.ValidText(update.Message.Text, edgarSubFinalButtons) {
 		return
 	}
 
@@ -41,8 +43,8 @@ func (h *DelAllFinalHandler) Call(update *api.Update) {
 	msg.ReplyMarkup = api.NewRemoveKeyboard(false)
 
 	switch update.Message.Text {
-	case keyboards.No:
-		msg.Text = message.MsgNoTickersDeleted
+	case helper.No:
+		msg.Text = helper.MsgNoTickersDeleted
 
 		if _, err = h.bot.Send(msg); err != nil {
 			log.Println(err)
@@ -50,7 +52,7 @@ func (h *DelAllFinalHandler) Call(update *api.Update) {
 			return
 		}
 
-	case keyboards.Yes:
+	case helper.Yes:
 		if err = h.repo.DelSubscriptions(&user, model.EdgarSubscription); err != nil {
 			log.Println(err)
 
@@ -63,7 +65,7 @@ func (h *DelAllFinalHandler) Call(update *api.Update) {
 			return
 		}
 
-		msg = api.NewMessage(update.Message.Chat.ID, message.MsgTickersDeleted)
+		msg = api.NewMessage(update.Message.Chat.ID, helper.MsgTickersDeleted)
 
 		if _, err = h.bot.Send(msg); err != nil {
 			log.Println(err)
@@ -72,7 +74,7 @@ func (h *DelAllFinalHandler) Call(update *api.Update) {
 		}
 	}
 
-	if err = h.repo.UpsertState(&user, common.StartCommand); err != nil {
+	if err = h.repo.UpsertState(&user, helper.StartCommandState, helper.StartBranch); err != nil {
 		log.Printf("Error setting state for user %s", user.Username)
 
 		return

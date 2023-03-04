@@ -1,32 +1,33 @@
 package edgar
 
 import (
-	"app/internal/bot/common"
-	"app/internal/bot/common/keyboards"
-	"app/internal/bot/common/message"
 	"app/internal/bot/handler"
-	"app/internal/bot/repository/mongo_db"
-	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"app/internal/bot/helper"
+	"app/internal/repository"
 	"log"
+
+	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type DeleteHandler struct {
 	bot  *api.BotAPI
-	repo mongo_db.BaseRepoInterface
+	repo repository.BaseRepoInterface
 	handler.BaseHandler
+	nav handler.Nav
 }
 
-const (
-	edgarDeleteState = "edgarDeleteState"
-)
-
 var (
-	edgarDeleteSources = []string{common.EdgarCommand}
-	edgarDeleteButtons = []string{keyboards.DeleteButton}
+	edgarDeleteButtons = []string{helper.DeleteButton}
 )
 
-func NewDeleteHandler(bot *api.BotAPI, dbRepo mongo_db.BaseRepoInterface) *DeleteHandler {
-	return &DeleteHandler{bot: bot, repo: dbRepo}
+func NewDeleteHandler(bot *api.BotAPI, dbRepo repository.BaseRepoInterface, branch int) *DeleteHandler {
+	return &DeleteHandler{
+		bot:  bot,
+		repo: dbRepo,
+		nav: handler.Nav{
+			ValidSources: []int{helper.EdgarCommandState},
+			ValidBranch:  branch,
+		}}
 }
 
 func (h *DeleteHandler) Call(update *api.Update) {
@@ -37,12 +38,12 @@ func (h *DeleteHandler) Call(update *api.Update) {
 		return
 	}
 
-	if !h.ValidState(user.State.NavCurrent, edgarDeleteSources) || !h.ValidText(update.Message.Text, edgarDeleteButtons) {
+	if !h.ValidState(user, h.nav) || !h.ValidText(update.Message.Text, edgarDeleteButtons) {
 		return
 	}
 
-	msg := api.NewMessage(update.Message.Chat.ID, message.MsgTypeTickersToUnsubscribe)
-	msg.ReplyMarkup = keyboards.DeleteAllSubKeyboard
+	msg := api.NewMessage(update.Message.Chat.ID, helper.MsgTypeTickersToUnsubscribe)
+	msg.ReplyMarkup = helper.DeleteAllSubKeyboard
 
 	if _, err = h.bot.Send(msg); err != nil {
 		log.Println(err)
@@ -50,7 +51,7 @@ func (h *DeleteHandler) Call(update *api.Update) {
 		return
 	}
 
-	if err = h.repo.UpsertState(&user, edgarDeleteState); err != nil {
+	if err = h.repo.UpsertState(&user, helper.EdgarDeleteState, helper.EdgarBranch); err != nil {
 		log.Printf("Error setting state for user %s", user.Username)
 
 		return
